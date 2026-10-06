@@ -408,12 +408,14 @@ export const Terminal: React.FC = () => {
                 playsInline
                 muted
                 className={`absolute inset-0 w-full h-full object-cover ${cameraAtiva ? 'block' : 'hidden'}`}
+                style={{ transform: 'scaleX(-1)' }}
               />
 
               {/* Canvas para desenhar detecção e bounding box facial */}
               <canvas
                 ref={canvasRef}
                 className={`absolute inset-0 w-full h-full pointer-events-none ${cameraAtiva ? 'block' : 'hidden'}`}
+                style={{ transform: 'scaleX(-1)' }}
               />
 
               {/* Simulador visual se câmera não estiver liberada */}
