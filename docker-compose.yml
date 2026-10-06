@@ -1,0 +1,92 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ponto_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ponto_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ponto_secret_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-ponto_facial_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ponto_user} -d ${POSTGRES_DB:-ponto_facial_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ponto_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ponto_redis
+    restart: always
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ponto_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: ponto_backend
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ponto_user}:${POSTGRES_PASSWORD:-ponto_secret_2026}@postgres:5432/${POSTGRES_DB:-ponto_facial_db}?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-chave-secreta-jwt-super-segura-ponto-facial-2026}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-chave-secreta-refresh-jwt-super-segura-2026}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - ponto_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    container_name: ponto_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    networks:
+      - ponto_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: ponto_nginx_proxy
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - ponto_network
+
+volumes:
+  postgres_data:
+    name: ponto_postgres_data
+  redis_data:
+    name: ponto_redis_data
+
+networks:
+  ponto_network:
+    name: ponto_facial_network
+    driver: bridge

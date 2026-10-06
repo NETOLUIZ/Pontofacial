@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Perfil {
+  SUPER_ADMIN
+  ADMIN_EMPRESA
+  RH
+  GESTOR
+  OPERADOR
+  TERMINAL
+}
+
+enum StatusFuncionario {
+  ATIVO
+  INATIVO
+  AFASTADO
+}
+
+enum TipoRegistro {
+  ENTRADA
+  SAIDA_INTERVALO
+  RETORNO_INTERVALO
+  SAIDA
+}
+
+enum OrigemRegistro {
+  ONLINE
+  OFFLINE
+  MANUAL
+}
+
+enum StatusRegistro {
+  VALIDO
+  PENDENTE
+  CANCELADO
+  AJUSTADO
+}
+
+enum StatusDispositivo {
+  ONLINE
+  OFFLINE
+  BLOQUEADO
+}
+
+model Empresa {
+  id            String   @id @default(uuid())
+  razaoSocial   String   @map("razao_social")
+  nomeFantasia  String   @map("nome_fantasia")
+  cnpj          String   @unique
+  ativo         Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  usuarios        Usuario[]
+  funcionarios    Funcionario[]
+  jornadas        Jornada[]
+  dispositivos    Dispositivo[]
+  registrosPonto  RegistroPonto[]
+  auditorias      Auditoria[]
+
+  @@map("empresas")
+}
+
+model Usuario {
+  id           String    @id @default(uuid())
+  empresaId    String?   @map("empresa_id")
+  nome         String
+  email        String    @unique
+  senhaHash    String    @map("senha_hash")
+  perfil       Perfil    @default(OPERADOR)
+  ativo        Boolean   @default(true)
+  ultimoLogin  DateTime? @map("ultimo_login")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  empresa      Empresa?    @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  auditorias   Auditoria[]
+
+  @@index([empresaId])
+  @@index([email])
+  @@map("usuarios")
+}
+
+model Jornada {
+  id                String   @id @default(uuid())
+  empresaId         String   @map("empresa_id")
+  nome              String
+  horaEntrada       String   @default("08:00") @map("hora_entrada")
+  horaIntervalo     String?  @default("12:00") @map("hora_intervalo")
+  horaRetorno       String?  @default("13:00") @map("hora_retorno")
+  horaSaida         String   @default("17:00") @map("hora_saida")
+  controleIntervalo Boolean  @default(true) @map("controle_intervalo")
+  toleranciaMinutos Int      @default(10) @map("tolerancia_minutos")
+  ativo             Boolean  @default(true)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  empresa           Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  funcionarios      Funcionario[]
+
+  @@index([empresaId])
+  @@map("jornadas")
+}
+
+model Funcionario {
+  id                  String            @id @default(uuid())
+  empresaId           String            @map("empresa_id")
+  jornadaId           String?           @map("jornada_id")
+  nome                String
+  cpf                 String
+  matricula           String
+  cargo               String
+  departamento        String
+  biometriaCadastrada Boolean           @default(false) @map("biometria_cadastrada")
+  fotoUrl             String?           @map("foto_url")
+  status              StatusFuncionario @default(ATIVO)
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+
+  empresa             Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  jornada             Jornada?          @relation(fields: [jornadaId], references: [id], onDelete: SetNull)
+  registrosPonto      RegistroPonto[]
+
+  @@unique([empresaId, cpf])
+  @@unique([empresaId, matricula])
+  @@index([empresaId])
+  @@map("funcionarios")
+}
+
+model Dispositivo {
+  id                String            @id @default(uuid())
+  empresaId         String            @map("empresa_id")
+  nome              String
+  identificadorUuid String            @unique @map("identificador_uuid")
+  localizacao       String?
+  status            StatusDispositivo @default(ONLINE)
+  ultimoSync        DateTime?         @map("ultimo_sync")
+  versaoApp         String?           @map("versao_app")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  empresa           Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  registrosPonto    RegistroPonto[]
+
+  @@index([empresaId])
+  @@map("dispositivos")
+}
+
+model RegistroPonto {
+  id              String         @id @default(uuid())
+  empresaId       String         @map("empresa_id")
+  funcionarioId   String         @map("funcionario_id")
+  dispositivoId   String?        @map("dispositivo_id")
+  tipo            TipoRegistro
+  dataHora        DateTime       @map("data_hora")
+  origem          OrigemRegistro @default(ONLINE)
+  status          StatusRegistro @default(VALIDO)
+  idempotencyKey  String?        @unique @map("idempotency_key")
+  fotoRegistroUrl  String?        @map("foto_registro_url")
+  hashIntegridade  String?        @map("hash_integridade")
+  observacao       String?
+  motivoAjuste     String?        @map("motivo_ajuste")
+  ajustadoPorId    String?        @map("ajustado_por_id")
+  ajustadoPorNome  String?        @map("ajustado_por_nome")
+  dataHoraOriginal DateTime?      @map("data_hora_original")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime?      @updatedAt @map("updated_at")
+
+  empresa         Empresa        @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  funcionario     Funcionario    @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+  dispositivo     Dispositivo?   @relation(fields: [dispositivoId], references: [id], onDelete: SetNull)
+
+  @@index([empresaId, dataHora])
+  @@index([funcionarioId, dataHora])
+  @@map("registros_ponto")
+}
+
+model Auditoria {
+  id              String   @id @default(uuid())
+  empresaId       String?  @map("empresa_id")
+  usuarioId       String?  @map("usuario_id")
+  acao            String
+  entidade        String
+  entidadeId      String?  @map("entidade_id")
+  dadosAnteriores Json?    @map("dados_anteriores")
+  dadosNovos      Json?    @map("dados_novos")
+  ip              String?
+  userAgent       String?  @map("user_agent")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  empresa         Empresa? @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  usuario         Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([empresaId])
+  @@index([usuarioId])
+  @@index([createdAt])
+  @@map("auditorias")
+}
