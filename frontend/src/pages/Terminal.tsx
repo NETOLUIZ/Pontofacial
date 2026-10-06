@@ -49,12 +49,63 @@ export const Terminal: React.FC = () => {
 
   // Estados do terminal
   const [cameraAtiva, setCameraAtiva] = useState(false);
+  const [erroCamera, setErroCamera] = useState<string | null>(null);
   const [modelosCarregados, setModelosCarregados] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
   const [filaOffline, setFilaOffline] = useState<number>(0);
   const [tempoAtual, setTempoAtual] = useState(new Date());
   const [escanendo, setEscaneando] = useState(false);
   const [scannerAtivo, setScannerAtivo] = useState(true);
+
+  // Inicializar câmera WebCam
+  const iniciarCamera = async () => {
+    setErroCamera(null);
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+          setErroCamera('O navegador bloqueia a câmera no celular em conexões HTTP. É obrigatório ativar o SSL (HTTPS) no servidor para liberar no celular!');
+        } else {
+          setErroCamera('Dispositivo de captura ou suporte a webcam não encontrado no navegador.');
+        }
+        setCameraAtiva(false);
+        return;
+      }
+
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: { ideal: 'user' },
+            width: { ideal: 640 }, 
+            height: { ideal: 480 } 
+          },
+          audio: false 
+        });
+      } catch (errConstraint) {
+        // Fallback para dispositivos sem suporte a constraints detalhadas
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.setAttribute('webkit-playsinline', 'true');
+        await videoRef.current.play();
+        setCameraAtiva(true);
+        setErroCamera(null);
+      }
+    } catch (err: any) {
+      console.warn('Erro ao inicializar câmera:', err);
+      setCameraAtiva(false);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setErroCamera('Permissão da câmera foi negada. Permita o uso da câmera no ícone de cadeado do navegador.');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setErroCamera('Nenhuma câmera física detectada no dispositivo.');
+      } else {
+        setErroCamera(err.message || 'Falha ao conectar com a câmera.');
+      }
+    }
+  };
   
   // Feedback da batida
   const [ultimoResultado, setUltimoResultado] = useState<{
@@ -116,22 +167,7 @@ export const Terminal: React.FC = () => {
     return () => { ativo = false; };
   }, []);
 
-  // Inicializar câmera WebCam
-  const iniciarCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 640, height: 480, facingMode: 'user' } 
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-        setCameraAtiva(true);
-      }
-    } catch (err) {
-      console.warn('Câmera física não disponível ou permissão negada. Ativando simulador óptico.');
-      setCameraAtiva(false);
-    }
-  };
+
 
   useEffect(() => {
     iniciarCamera();
@@ -382,12 +418,29 @@ export const Terminal: React.FC = () => {
 
               {/* Simulador visual se câmera não estiver liberada */}
               {!cameraAtiva && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-[#111116] to-[#09090B]">
-                  <div className="w-24 h-24 rounded-full border-2 border-dashed border-[#1746B8] flex items-center justify-center mb-3">
-                    <ScanFace size={54} className="text-[#1746B8] opacity-80" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-[#111116] to-[#09090B] z-10">
+                  <div className="w-20 h-20 rounded-full border-2 border-dashed border-[#1746B8] flex items-center justify-center mb-3">
+                    <ScanFace size={48} className="text-[#1746B8] opacity-80" />
                   </div>
                   <div className="text-sm font-bold text-white">Câmera Óptica em Standby</div>
-                  <div className="text-xs text-[#6B7280] mt-1">Conecte sua webcam ou use o painel lateral para testar</div>
+                  
+                  {erroCamera ? (
+                    <div className="mt-2.5 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs max-w-sm text-left flex items-start gap-2 shadow">
+                      <AlertTriangle size={18} className="shrink-0 mt-0.5 text-amber-400" />
+                      <span>{erroCamera}</span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-[#6B7280] mt-1 max-w-xs">
+                      Toque no botão abaixo para autorizar o acesso à câmera do seu dispositivo
+                    </div>
+                  )}
+
+                  <button
+                    onClick={iniciarCamera}
+                    className="mt-4 px-5 py-2.5 rounded-xl bg-[#1746B8] hover:bg-[#1E56D8] text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-[#1746B8]/30 transition active:scale-95 cursor-pointer"
+                  >
+                    <Camera size={16} /> Ativar Câmera do Dispositivo
+                  </button>
                 </div>
               )}
 
