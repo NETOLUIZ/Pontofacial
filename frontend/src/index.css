@@ -217,6 +217,14 @@ code, pre {
   color: #52525B;
 }
 
+.input-with-leading-icon {
+  padding-left: 2.5rem;
+}
+
+.input-with-trailing-icon {
+  padding-right: 2.5rem;
+}
+
 /* Table Corporate */
 .table-corporate {
   width: 100%;

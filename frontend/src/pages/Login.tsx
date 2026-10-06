@@ -92,7 +92,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onOpenPresentation, onO
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu.email@empresa.com.br"
-                className="input-corporate pl-10"
+                className="input-corporate input-with-leading-icon"
               />
             </div>
           </div>
@@ -108,7 +108,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onOpenPresentation, onO
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 placeholder="Digite sua senha"
-                className="input-corporate pl-10 pr-10"
+                className="input-corporate input-with-leading-icon input-with-trailing-icon"
               />
               <button
                 type="button"
