@@ -34,6 +34,12 @@ if [ ! -f .env ]; then
     fi
 fi
 
+# 2.1 Atualiza código do repositório se for clone git
+if [ -d .git ]; then
+    echo "🔄 Atualizando repositório Git com as correções mais recentes..."
+    git pull origin main || true
+fi
+
 # 3. Build e subida dos contêineres Docker
 echo "📦 Construindo imagens e subindo os contêineres (PostgreSQL, Redis, Backend, Frontend, Nginx)..."
 docker compose down --remove-orphans || true
