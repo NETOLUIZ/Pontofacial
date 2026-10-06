@@ -2,20 +2,22 @@
 set -e
 
 echo "================================================================="
-echo "  🔧 CONFIGURANDO ROTEAMENTO EXATO DO PONTO FACIAL (PORTA 3080)"
+echo "  🚀 CONFIGURANDO NGINX EXCLUSIVO PARA O PONTO FACIAL (PORTA 3080)"
 echo "================================================================="
 
-# 1. Cria a configuração oficial dedicada para o ptfacial no Nginx do Host
+# 1. Cria a configuração exata para o ptfacial no Nginx do Host
 sudo tee /etc/nginx/sites-available/ptfacial.conf > /dev/null << 'EOF'
 server {
     listen 80;
-    server_name ptfacial.korentech.com.br;
+    listen [::]:80;
+    server_name ptfacial.korentech.com.br *.ptfacial.korentech.com.br;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl;
-    server_name ptfacial.korentech.com.br;
+    listen [::]:443 ssl;
+    server_name ptfacial.korentech.com.br *.ptfacial.korentech.com.br;
 
     ssl_certificate /etc/letsencrypt/live/ptfacial.korentech.com.br/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/ptfacial.korentech.com.br/privkey.pem;
@@ -40,13 +42,7 @@ EOF
 # 2. Habilita o site no Nginx
 sudo ln -sf /etc/nginx/sites-available/ptfacial.conf /etc/nginx/sites-enabled/ptfacial.conf
 
-# 3. Remove referência duplicada de ptfacial caso o certbot tenha injetado em korentech-atu.conf
-if [ -f /etc/nginx/sites-enabled/korentech-atu.conf ]; then
-    echo "🔍 Limpando duplicidade em korentech-atu.conf..."
-    sudo sed -i 's/ptfacial\.korentech\.com\.br//g' /etc/nginx/sites-enabled/korentech-atu.conf
-fi
-
-# 4. Testa a sintaxe e recarrega
+# 3. Valida a sintaxe e recarrega o Nginx
 echo "🔍 Validando configuração do Nginx..."
 sudo nginx -t
 
@@ -54,6 +50,6 @@ echo "🔄 Recarregando Nginx..."
 sudo systemctl reload nginx
 
 echo "================================================================="
-echo "  ✅ PONTO FACIAL ATIVADO COM SUCESSO EM HTTPS!"
+echo "  ✅ PONTO FACIAL ATIVADO COM SUCESSO!"
 echo "================================================================="
 echo "Acesse agora: https://ptfacial.korentech.com.br"
