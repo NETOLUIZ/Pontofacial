@@ -12,27 +12,25 @@ echo "================================================================="
 echo "  🔒 CONFIGURANDO SSL HTTPS PARA: $DOMINIO_PRINCIPAL"
 echo "================================================================="
 
-# 1. Instala Certbot
-echo "📦 Instalando Certbot..."
-if command -v apt &> /dev/null; then
+# 1. Garante Certbot e plugin Nginx instalados
+echo "📦 Verificando Certbot e plugin Nginx..."
+if ! command -v certbot &> /dev/null; then
     sudo apt update
     sudo apt install -y certbot python3-certbot-nginx
 fi
 
-# 2. Cria diretórios para desafio ACME
-mkdir -p certbot/conf certbot/www
-
-# 3. Solicita o certificado Let's Encrypt
-echo "🛡️ Gerando certificado SSL gratuito via Let's Encrypt..."
-sudo certbot certonly --webroot \
-    -w ./certbot/www \
+# 2. Solicita o certificado Let's Encrypt e configura o Nginx automaticamente
+echo "🛡️ Emitindo e ativando certificado SSL Let's Encrypt para $DOMINIO_PRINCIPAL..."
+sudo certbot --nginx \
     -d "$DOMINIO_PRINCIPAL" \
     --email "$EMAIL" \
     --agree-tos \
-    --non-interactive || {
-        echo "⚠️ Dica: Para subdomínios wildcard (*.$DOMINIO_PRINCIPAL), utilize validação DNS:"
-        echo "sudo certbot certonly --manual --preferred-challenges dns -d \"$DOMINIO_PRINCIPAL\" -d \"*.$DOMINIO_PRINCIPAL\""
-    }
+    --no-eff-email \
+    --redirect
+
+# 3. Testa sintaxe do Nginx e recarrega
+sudo nginx -t
+sudo systemctl reload nginx
 
 echo "================================================================="
 echo "  ✅ CERTIFICADO SSL CONFIGURADO COM SUCESSO!"
