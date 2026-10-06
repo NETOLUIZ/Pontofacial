@@ -34,7 +34,7 @@ app.use(cors({
       return callback(null, true);
     }
     // Fallback permissivo para garantir funcionamento multi-tenant
-    return callback(null, true);
+    return callback(new Error('Origem não autorizada pelo CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

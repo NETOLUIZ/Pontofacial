@@ -98,6 +98,10 @@ export class AuthService {
         throw { statusCode: 401, message: 'Usuário não encontrado ou inativo' };
       }
 
+      if (usuario.empresa && !usuario.empresa.ativo) {
+        throw { statusCode: 403, message: 'Empresa suspensa ou inativa.' };
+      }
+
       const payload: TokenPayload = {
         usuarioId: usuario.id,
         empresaId: usuario.empresaId,

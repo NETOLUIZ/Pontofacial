@@ -12,21 +12,21 @@ export const Navbar: React.FC<NavbarProps> = ({ activeView, setActiveView, curre
   const { user, logout } = useAuth();
 
   return (
-    <header className="h-16 shrink-0 border-b border-[#27272A] bg-[#111116] px-6 flex items-center justify-between z-50">
+    <header className="min-h-16 shrink-0 border-b border-[#27272A] bg-[#111116] px-3 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 z-50">
       {/* Brand & Context */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-2 sm:gap-6 min-w-0">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveView('terminal')}>
           <div className="w-10 h-10 rounded-lg bg-[#1746B8] flex items-center justify-center text-white shadow-md shadow-[#1746B8]/30">
             <ScanFace size={24} />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="font-bold tracking-tight text-white flex items-center gap-2 text-sm md:text-base">
               PONTO FACIAL
               <span className="text-[10px] bg-[#1746B8]/20 text-[#2F5FD0] border border-[#1746B8]/40 px-1.5 py-0.5 rounded font-mono font-bold">
                 SAAS
               </span>
             </div>
-            <div className="text-xs text-[#6B7280]">Reconhecimento Facial em Tempo Real</div>
+            <div className="hidden sm:block text-xs text-[#6B7280]">Reconhecimento Facial em Tempo Real</div>
           </div>
         </div>
 
@@ -40,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeView, setActiveView, curre
       </div>
 
       {/* Switcher & Actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1 sm:gap-3 max-w-full overflow-x-auto">
         {/* Toggle Apresentação vs Painel vs Terminal */}
         <div className="flex items-center bg-[#18181B] p-1 rounded-lg border border-[#27272A] gap-1">
           <button

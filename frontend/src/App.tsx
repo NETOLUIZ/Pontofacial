@@ -51,13 +51,13 @@ const AppContent: React.FC = () => {
           />
         </div>
       ) : (
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           <Sidebar
             currentTab={currentTab}
             setCurrentTab={setCurrentTab}
             onOpenPresentation={() => setActiveView('presentation')}
           />
-          <main className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10 bg-[#09090B]">
+          <main className="flex-1 min-w-0 overflow-y-auto p-3 sm:p-6 md:p-8 lg:p-10 bg-[#09090B]">
             <div className="max-w-7xl mx-auto w-full">
               {currentTab === 'terminal' && <Terminal />}
               {currentTab === 'dashboard' && <Dashboard />}

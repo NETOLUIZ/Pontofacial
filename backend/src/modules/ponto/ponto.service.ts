@@ -93,6 +93,18 @@ export class PontoService {
     }
 
     const dataHoraEfetiva = data.dataHora ? new Date(data.dataHora) : new Date();
+    if (Number.isNaN(dataHoraEfetiva.getTime())) {
+      throw { statusCode: 400, message: 'Data/hora inválida' };
+    }
+
+    if (data.dispositivoId) {
+      const dispositivo = await prisma.dispositivo.findFirst({
+        where: { id: data.dispositivoId, empresaId },
+      });
+      if (!dispositivo) {
+        throw { statusCode: 400, message: 'Dispositivo não pertence a esta empresa' };
+      }
+    }
 
     // 2. Proteção de duplicidade temporal (evita batida dupla acidental em menos de 2 minutos do mesmo tipo)
     const doisMinutosAtras = new Date(dataHoraEfetiva.getTime() - 2 * 60 * 1000);
@@ -209,7 +221,8 @@ export class PontoService {
 
     const nomeResponsavel = usuarioRh?.nome || usuarioAjustador.email || 'Analista de RH';
 
-    const registroAtualizado = await prisma.registroPonto.update({
+    const registroAtualizado = await prisma.$transaction(async (tx) => {
+      const registroAtualizado = await tx.registroPonto.update({
       where: { id: registroId },
       data: {
         dataHora: novaDataHora,
@@ -235,7 +248,7 @@ export class PontoService {
     });
 
     // Trilha de Auditoria
-    await prisma.auditoria.create({
+      await tx.auditoria.create({
       data: {
         empresaId,
         usuarioId: usuarioAjustador.usuarioId,
@@ -255,6 +268,8 @@ export class PontoService {
           ajustadoPorNome: nomeResponsavel,
         },
       },
+      });
+      return registroAtualizado;
     });
 
     return {
@@ -292,6 +307,9 @@ export class PontoService {
     }
 
     const dataHoraEfetiva = new Date(dados.dataHora);
+    if (Number.isNaN(dataHoraEfetiva.getTime())) {
+      throw { statusCode: 400, message: 'Data/hora inválida' };
+    }
 
     const usuarioRh = await prisma.usuario.findUnique({
       where: { id: usuarioAjustador.usuarioId },

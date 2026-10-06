@@ -73,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Se a API backend estiver offline ou sem Docker rodando localmente, ativa modo demonstração interativa segura
       console.warn('Servidor offline. Ativando sessão de demonstração local.');
+      if ((import.meta as any).env?.VITE_ENABLE_DEMO !== 'true') throw err;
       const demoUser: Usuario = {
         id: 'demo-user-id',
         nome: email.includes('admin') ? 'Super Administrador' : email.includes('rh') ? 'Camila RH' : 'Diretoria IMARF',

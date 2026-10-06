@@ -37,13 +37,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, onO
   }
 
   return (
-    <aside className="w-64 shrink-0 border-r border-[#27272A] bg-[#111116] flex flex-col justify-between p-4 h-full select-none">
+    <aside className="w-full lg:w-64 lg:shrink-0 border-b lg:border-b-0 lg:border-r border-[#27272A] bg-[#111116] flex flex-col justify-between p-3 lg:p-4 max-h-[42vh] lg:max-h-none lg:h-full overflow-y-auto select-none">
       <div className="space-y-6">
         <div>
           <div className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider px-3 mb-2">
             Operação & RH
           </div>
-          <nav className="space-y-1">
+          <nav className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const active = currentTab === item.id;
