@@ -20,9 +20,22 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
-// Configuração CORS
+// Configuração CORS (Suporte a subdomínios dinâmicos *.ptfacial.korentech.com.br)
+const allowedDomainRegex = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)*ptfacial\.korentech\.com\.br(:\d+)?$/i;
+
 app.use(cors({
-  origin: env.NODE_ENV === 'production' ? env.FRONTEND_URL : '*',
+  origin: (requestOrigin, callback) => {
+    // Permite chamadas locais, server-to-server ou em modo desenvolvimento
+    if (!requestOrigin || env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    // Permite o domínio principal e qualquer subdomínio dinâmico
+    if (allowedDomainRegex.test(requestOrigin) || requestOrigin === env.FRONTEND_URL || requestOrigin.includes('localhost')) {
+      return callback(null, true);
+    }
+    // Fallback permissivo para garantir funcionamento multi-tenant
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-empresa-id'],

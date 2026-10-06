@@ -76,9 +76,10 @@ export const Dispositivos: React.FC = () => {
   const [novaLocalizacao, setNovaLocalizacao] = useState('');
   const [novoTipo, setNovoTipo] = useState<'totem' | 'tablet' | 'web'>('tablet');
   const [novoUuid, setNovoUuid] = useState('');
+  const [novoSubdominio, setNovoSubdominio] = useState('');
   const [salvando, setSalvando] = useState(false);
 
-  // Atualiza identificador sugerido ao digitar nome
+  // Atualiza identificador e subdomínio sugeridos ao digitar nome
   useEffect(() => {
     if (novoNome) {
       const slug = novoNome
@@ -87,10 +88,12 @@ export const Dispositivos: React.FC = () => {
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]/g, '-')
         .replace(/-+/g, '-')
-        .slice(0, 24);
+        .slice(0, 20);
       setNovoUuid(`ponto-${slug}-${Math.floor(100 + Math.random() * 900)}`);
+      setNovoSubdominio(slug || 'totem');
     } else {
       setNovoUuid(`ponto-${Date.now().toString().slice(-6)}`);
+      setNovoSubdominio('');
     }
   }, [novoNome]);
 
@@ -110,9 +113,19 @@ export const Dispositivos: React.FC = () => {
     carregarDispositivos();
   }, []);
 
-  const gerarLinkPonto = (identificadorUuid: string) => {
-    const origin = window.location.origin;
-    return `${origin}/?terminal=${encodeURIComponent(identificadorUuid)}`;
+  const DOMINIO_BASE = 'ptfacial.korentech.com.br';
+
+  const gerarLinkPonto = (identificadorUuid: string, subdominioCustom?: string) => {
+    // Se foi informado ou possui subdomínio específico
+    if (subdominioCustom) {
+      return `https://${subdominioCustom}.${DOMINIO_BASE}/?terminal=${encodeURIComponent(identificadorUuid)}`;
+    }
+    // Se estamos rodando em um subdomínio na VPS, mantém o host atual
+    if (typeof window !== 'undefined' && window.location.hostname.includes(DOMINIO_BASE)) {
+      return `https://${window.location.host}/?terminal=${encodeURIComponent(identificadorUuid)}`;
+    }
+    // Padrão de produção
+    return `https://${DOMINIO_BASE}/?terminal=${encodeURIComponent(identificadorUuid)}`;
   };
 
   const copiarLinkPonto = (identificadorUuid: string, id: string) => {
@@ -449,6 +462,25 @@ export const Dispositivos: React.FC = () => {
                     <Link size={18} className="mx-auto mb-1 text-purple-400" />
                     Link Ponto Web
                   </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#A1A1AA] mb-1.5">
+                  Subdomínio Personalizado (opcional)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={novoSubdominio}
+                    onChange={(e) => setNovoSubdominio(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    placeholder="Ex: portaria, imarf, matriz"
+                    className="input-corporate flex-1 font-mono text-xs"
+                  />
+                  <span className="text-xs font-mono text-gray-400 shrink-0">.ptfacial.korentech.com.br</span>
+                </div>
+                <div className="text-[10px] text-emerald-400 mt-1 font-mono truncate">
+                  Preview do Link: https://{novoSubdominio ? `${novoSubdominio}.` : ''}ptfacial.korentech.com.br/?terminal={novoUuid}
                 </div>
               </div>
 
