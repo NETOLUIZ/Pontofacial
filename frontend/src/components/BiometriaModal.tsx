@@ -23,6 +23,7 @@ export const BiometriaModal: React.FC<BiometriaModalProps> = ({
   const [feedback, setFeedback] = useState<{ tipo: 'sucesso' | 'erro' | 'info'; mensagem: string } | null>(null);
   const [fotoCapturada, setFotoCapturada] = useState<string | null>(null);
   const [descritorCapturado, setDescritorCapturado] = useState<number[] | null>(null);
+  const [capturaConfirmada, setCapturaConfirmada] = useState(false);
   const [modoAba, setModoAba] = useState<'camera' | 'upload'>('camera');
 
   // Inicializar modelos neurais e câmera
@@ -87,6 +88,7 @@ export const BiometriaModal: React.FC<BiometriaModalProps> = ({
     if (!videoRef.current || processando) return;
 
     setProcessando(true);
+    setCapturaConfirmada(false);
     setFeedback({ tipo: 'info', mensagem: 'Analisando biometria facial e extraindo 128 pontos neurais...' });
 
     try {
@@ -142,6 +144,7 @@ export const BiometriaModal: React.FC<BiometriaModalProps> = ({
     if (!file) return;
 
     setProcessando(true);
+    setCapturaConfirmada(false);
     setFeedback({ tipo: 'info', mensagem: 'Processando imagem e extraindo descritor facial...' });
 
     const reader = new FileReader();
@@ -252,6 +255,15 @@ export const BiometriaModal: React.FC<BiometriaModalProps> = ({
             {feedback.tipo === 'erro' && <AlertTriangle size={16} className="shrink-0" />}
             {feedback.tipo === 'info' && <RefreshCw size={16} className="shrink-0 animate-spin" />}
             <span>{feedback.mensagem}</span>
+            {feedback.tipo === 'sucesso' && !capturaConfirmada && (
+              <button
+                type="button"
+                onClick={() => setCapturaConfirmada(true)}
+                className="ml-auto shrink-0 rounded-lg bg-emerald-500 px-3 py-1.5 text-[11px] font-bold text-[#07130E] hover:bg-emerald-400 transition"
+              >
+                OK, entendi
+              </button>
+            )}
           </div>
         )}
 
