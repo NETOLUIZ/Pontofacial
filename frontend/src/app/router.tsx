@@ -56,7 +56,14 @@ export const RhRouter: React.FC = () => (
       <Route path="/login" element={<RhLogin />} />
       <Route path="/acesso-negado" element={<NotFound />} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<RequireAuth><RhLayout /></RequireAuth>} />
+      <Route path="/dashboard" element={<RequireAuth><RhLayout /></RequireAuth>} />
+      <Route path="/funcionarios" element={<RequireAuth><RhLayout /></RequireAuth>} />
+      <Route path="/jornadas" element={<RequireAuth><RhLayout /></RequireAuth>} />
+      <Route path="/dispositivos" element={<RequireAuth><RhLayout /></RequireAuth>} />
+      <Route path="/registros" element={<RequireAuth><RhLayout /></RequireAuth>} />
+      <Route path="/relatorios" element={<RequireAuth><RhLayout /></RequireAuth>} />
+      <Route path="/empresas" element={<RequireAuth><RhLayout /></RequireAuth>} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   </BrowserRouter>
 );

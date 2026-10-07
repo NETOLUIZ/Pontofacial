@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service';
 import { AuthenticatedRequest } from '../../middlewares/auth.middleware';
-import { ACCESS_COOKIE, REFRESH_COOKIE, getCookieOptions } from './auth.cookies';
+import { ACCESS_COOKIE, REFRESH_COOKIE, getCookieOptions, readCookie } from './auth.cookies';
 
 const authService = new AuthService();
 
@@ -31,9 +31,16 @@ export class AuthController {
 
   async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { refreshToken } = req.body;
+      const refreshToken = readCookie(req.headers.cookie, REFRESH_COOKIE);
+      if (!refreshToken) {
+        res.status(401).json({ success: false, message: 'Não autenticado' });
+        return;
+      }
       const result = await authService.refreshToken(refreshToken);
-      res.json({ success: true, data: result });
+      const cookieOptions = getCookieOptions();
+      res.cookie(ACCESS_COOKIE, result.token, { ...cookieOptions, maxAge: 8 * 60 * 60 * 1000 });
+      res.cookie(REFRESH_COOKIE, result.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
+      res.json({ success: true, data: null });
     } catch (error) {
       next(error);
     }

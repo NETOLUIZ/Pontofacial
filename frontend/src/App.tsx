@@ -6,10 +6,10 @@ import { resolveSurface } from './app/surface';
 import { RhRouter } from './app/router';
 
 const AppContent: React.FC = () => {
+  useAuth();
   const surface = resolveSurface(window.location.hostname);
   if (surface === 'rh') return <RhRouter />;
 
-  const { isAuthenticated } = useAuth();
   const [activeView, setActiveView] = useState<'presentation' | 'terminal'>('terminal');
 
   return (

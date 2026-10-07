@@ -6,7 +6,6 @@ type RequestApiOptions = RequestInit & {
 };
 
 export async function requestApi<T>(endpoint: string, options: RequestApiOptions = {}): Promise<T> {
-  const token = localStorage.getItem('ponto_token');
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
@@ -14,10 +13,6 @@ export async function requestApi<T>(endpoint: string, options: RequestApiOptions
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -28,9 +23,6 @@ export async function requestApi<T>(endpoint: string, options: RequestApiOptions
     });
 
     if (response.status === 401) {
-      // Token expirado
-      localStorage.removeItem('ponto_token');
-      localStorage.removeItem('ponto_user');
       window.dispatchEvent(new Event('auth-logout'));
     }
 
