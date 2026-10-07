@@ -24,7 +24,15 @@ export const BiometriaModal: React.FC<BiometriaModalProps> = ({
   const [fotoCapturada, setFotoCapturada] = useState<string | null>(null);
   const [descritorCapturado, setDescritorCapturado] = useState<number[] | null>(null);
   const [capturaConfirmada, setCapturaConfirmada] = useState(false);
+  const [rostoDetectado, setRostoDetectado] = useState(false);
+  const [agora, setAgora] = useState(new Date());
   const [modoAba, setModoAba] = useState<'camera' | 'upload'>('camera');
+
+  const falar = (mensagem: string) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(mensagem));
+  };
 
   // Inicializar modelos neurais e câmera
   useEffect(() => {
@@ -44,6 +52,7 @@ export const BiometriaModal: React.FC<BiometriaModalProps> = ({
 
       if (ok) {
         setFeedback({ tipo: 'info', mensagem: 'Posicione o rosto no centro do círculo para captura.' });
+        falar('Posicione o rosto dentro do oval e olhe para a câmera.');
         iniciarCamera();
       } else {
         setFeedback({ tipo: 'erro', mensagem: 'Falha ao carregar modelos biométricos locais.' });
@@ -57,6 +66,26 @@ export const BiometriaModal: React.FC<BiometriaModalProps> = ({
       pararCamera();
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = window.setInterval(() => setAgora(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !modelosCarregados || !stream || modoAba !== 'camera') return;
+    let ativo = true;
+    const timer = window.setInterval(async () => {
+      if (!ativo || processando || !videoRef.current || videoRef.current.readyState < 2) return;
+      const resultado = await extrairDescritorFacial(videoRef.current);
+      if (!ativo) return;
+      const detectado = Boolean(resultado);
+      setRostoDetectado(detectado);
+      if (detectado && !descritorCapturado) falar('Rosto detectado. Toque em confirmar captura.');
+    }, 900);
+    return () => { ativo = false; window.clearInterval(timer); };
+  }, [isOpen, modelosCarregados, stream, modoAba, processando, descritorCapturado]);
 
   const iniciarCamera = async () => {
     try {
@@ -126,6 +155,8 @@ export const BiometriaModal: React.FC<BiometriaModalProps> = ({
 
       const vetor = Array.from(resultado.descriptor);
       setDescritorCapturado(vetor);
+      setRostoDetectado(true);
+      falar('Captura realizada com sucesso. Confirme para salvar a biometria.');
 
       setFeedback({
         tipo: 'sucesso',
@@ -192,7 +223,7 @@ export const BiometriaModal: React.FC<BiometriaModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="card-corporate bg-[#111116] border-[#27272A] w-full max-w-xl shadow-2xl overflow-hidden p-6 space-y-5">
+      <div className="card-corporate bg-[#111116] border-[#27272A] w-full max-w-4xl max-h-[95vh] overflow-y-auto shadow-2xl p-4 sm:p-6 space-y-5">
         {/* Header do Modal */}
         <div className="flex items-center justify-between border-b border-[#27272A] pb-4">
           <div className="flex items-center gap-3">
@@ -204,6 +235,7 @@ export const BiometriaModal: React.FC<BiometriaModalProps> = ({
               <p className="text-xs text-[#A1A1AA]">
                 Colaborador: <span className="text-white font-semibold">{funcionarioNome || 'Novo Colaborador'}</span>
               </p>
+              <p className="text-[11px] text-[#6B7280] mt-1">{agora.toLocaleDateString('pt-BR')} · {agora.toLocaleTimeString('pt-BR')}</p>
             </div>
           </div>
           <button
@@ -276,6 +308,7 @@ export const BiometriaModal: React.FC<BiometriaModalProps> = ({
               playsInline
               muted
               className="w-full h-full object-cover"
+              style={{ transform: 'scaleX(-1)' }}
             />
 
             {/* Retículo Oval Guia do Rosto */}
@@ -366,6 +399,17 @@ export const BiometriaModal: React.FC<BiometriaModalProps> = ({
               >
                 <Camera size={14} />
                 {processando ? 'Analisando...' : 'Capturar da Câmera'}
+              </button>
+            )}
+
+            {modoAba === 'camera' && rostoDetectado && !descritorCapturado && (
+              <button
+                type="button"
+                onClick={capturarDaCamera}
+                disabled={processando}
+                className="btn-primary text-xs"
+              >
+                <CheckCircle2 size={14} /> Confirmar captura
               </button>
             )}
 
