@@ -13,12 +13,8 @@ export function tenantMiddleware(req: AuthenticatedRequest, res: Response, next:
     return;
   }
 
-  // Super Admin pode simular ou filtrar por empresa via cabeçalho x-empresa-id se desejar
+  // Super Admin opera em escopo global; filtros por empresa devem usar endpoints autorizados.
   if (req.user.perfil === Perfil.SUPER_ADMIN) {
-    const headerEmpresaId = req.headers['x-empresa-id'] as string;
-    if (headerEmpresaId) {
-      req.empresaId = headerEmpresaId;
-    }
     next();
     return;
   }

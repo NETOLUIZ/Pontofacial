@@ -39,3 +39,4 @@ redis_data/
 
 # Superpowers worktrees
 .worktrees/
+.superpowers/

@@ -158,3 +158,24 @@ Acesse `http://localhost:3000`.
 
 4. **RBAC Estrito**:
    - O perfil `TERMINAL` é impedido de acessar endpoints administrativos, sendo restrito exclusivamente às operações de batida e consulta de status.
+
+## Superfícies de acesso
+
+- `https://ptfacial.korentech.com.br` abre o terminal facial público.
+- `https://rh.ptfacial.korentech.com.br` abre o portal autenticado do RH.
+- O DNS e o certificado wildcard precisam estar configurados na VPS antes do acesso ao subdomínio RH.
+- A biometria atual permanece em revisão; o sistema não deve ser apresentado como prova de vida ou conformidade LGPD/REP-P concluída.
+
+## Verificação local
+
+```bash
+cd frontend
+npm ci
+npm run test
+npm run build
+
+cd ../backend
+npm ci
+npm test
+npm run build
+```

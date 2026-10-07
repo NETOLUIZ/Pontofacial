@@ -318,6 +318,7 @@ code, pre {
 .terminal-kiosk .lg\:col-span-5 { max-width: 760px; margin: 14px auto 0; }
 .terminal-kiosk .lg\:col-span-5 > div:first-child:not(.hidden) { background: transparent !important; border: 0 !important; box-shadow: none !important; }
 .terminal-kiosk .lg\:col-span-5 > div:last-child { display: none; }
+.terminal-kiosk .terminal-team-selector { display: none !important; }
 .terminal-kiosk .badge-green { background: #e8f7ee !important; color: #229653 !important; }
 .terminal-kiosk .bg-emerald-500 { background: #79d936 !important; }
 .terminal-kiosk .border-emerald-400 { border-color: #79d936 !important; }
