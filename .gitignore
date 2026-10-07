@@ -36,3 +36,6 @@ redis_data/
 # IDE
 .vscode/
 .idea/
+
+# Superpowers worktrees
+.worktrees/
