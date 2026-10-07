@@ -12,6 +12,7 @@ import { dispositivosRoutes } from './modules/dispositivos/dispositivos.routes';
 import { pontoRoutes } from './modules/ponto/ponto.routes';
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes';
 import { auditoriaRoutes } from './modules/auditoria/auditoria.routes';
+import { terminalRoutes } from './modules/terminal/terminal.routes';
 
 const app: Express = express();
 
@@ -66,6 +67,7 @@ app.use('/api/dispositivos', dispositivosRoutes);
 app.use('/api/registros-ponto', pontoRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/auditoria', auditoriaRoutes);
+app.use('/api/terminal', terminalRoutes);
 
 // Middleware centralizado de tratamento de erros
 app.use(errorMiddleware);

@@ -160,16 +160,30 @@ export const Terminal: React.FC = () => {
 
   useEffect(() => {
     let ativo = true;
-    requestApi<Funcionario[]>('/funcionarios')
-      .then((data) => {
-        if (ativo && Array.isArray(data) && data.length > 0) {
-          setFuncionariosCadastrados(data);
-          localStorage.setItem('ponto_funcionarios', JSON.stringify(data));
+
+    // 1. Sincroniza funcionários diretamente pelo endpoint do Terminal (funciona tanto autenticado quanto no Totem público)
+    requestApi<{ dispositivo?: any; funcionarios?: Funcionario[] }>(`/terminal/funcionarios?terminal=${encodeURIComponent(terminalParam)}`)
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.funcionarios;
+        if (ativo && Array.isArray(list) && list.length > 0) {
+          setFuncionariosCadastrados(list);
+          localStorage.setItem('ponto_funcionarios', JSON.stringify(list));
         }
       })
-      .catch(() => undefined);
+      .catch(() => {
+        // Fallback: tenta /funcionarios se já estiver logado
+        requestApi<Funcionario[]>('/funcionarios')
+          .then((data) => {
+            if (ativo && Array.isArray(data) && data.length > 0) {
+              setFuncionariosCadastrados(data);
+              localStorage.setItem('ponto_funcionarios', JSON.stringify(data));
+            }
+          })
+          .catch(() => undefined);
+      });
+
     return () => { ativo = false; };
-  }, []);
+  }, [terminalParam]);
 
   // Relógio em tempo real
   useEffect(() => {
@@ -327,7 +341,7 @@ export const Terminal: React.FC = () => {
     // consultem a mesma fonte. O localStorage fica apenas como contingência.
     let registradoNaApi = false;
     try {
-      await requestApi('/registros-ponto', {
+      await requestApi('/terminal/ponto', {
         method: 'POST',
         body: JSON.stringify({
           funcionarioId: funcionario.id,
@@ -337,11 +351,29 @@ export const Terminal: React.FC = () => {
           status: 'VALIDO',
           idempotencyKey: novoRegistro.id,
           fotoRegistroUrl: funcionario.fotoUrl || undefined,
+          terminalUuid: terminalParam,
         }),
       });
       registradoNaApi = true;
     } catch (err) {
-      console.warn('API indisponível; registro mantido em contingência local.', err);
+      // Fallback para rota antiga se necessário
+      try {
+        await requestApi('/registros-ponto', {
+          method: 'POST',
+          body: JSON.stringify({
+            funcionarioId: funcionario.id,
+            tipo: novoEvento,
+            dataHora: agora.toISOString(),
+            origem: offlineMode ? 'OFFLINE' : 'ONLINE',
+            status: 'VALIDO',
+            idempotencyKey: novoRegistro.id,
+            fotoRegistroUrl: funcionario.fotoUrl || undefined,
+          }),
+        });
+        registradoNaApi = true;
+      } catch (err2) {
+        console.warn('API indisponível; registro mantido em contingência local.', err2);
+      }
     }
 
     // Espelha localmente para atualizar o terminal e permitir sincronização offline.
