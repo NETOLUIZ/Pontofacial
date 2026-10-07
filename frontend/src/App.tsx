@@ -13,10 +13,13 @@ import { Registros } from './pages/Registros';
 import { Terminal } from './pages/Terminal';
 import { Relatorios } from './pages/Relatorios';
 import { Empresas } from './pages/Empresas';
+import { resolveSurface } from './app/surface';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  const [activeView, setActiveView] = useState<'presentation' | 'app' | 'terminal'>('terminal');
+  const surface = resolveSurface(window.location.hostname);
+  const initialView = surface === 'rh' ? 'app' : 'terminal';
+  const [activeView, setActiveView] = useState<'presentation' | 'app' | 'terminal'>(initialView);
   const [currentTab, setCurrentTab] = useState<string>('terminal');
 
   return (
