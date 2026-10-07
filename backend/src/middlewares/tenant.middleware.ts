@@ -15,10 +15,6 @@ export function tenantMiddleware(req: AuthenticatedRequest, res: Response, next:
 
   // Super Admin pode simular ou filtrar por empresa via cabeçalho x-empresa-id se desejar
   if (req.user.perfil === Perfil.SUPER_ADMIN) {
-    const headerEmpresaId = req.headers['x-empresa-id'] as string;
-    if (headerEmpresaId) {
-      req.empresaId = headerEmpresaId;
-    }
     next();
     return;
   }
