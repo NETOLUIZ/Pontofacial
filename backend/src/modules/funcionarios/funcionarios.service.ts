@@ -46,6 +46,8 @@ export class FuncionariosService {
     departamento: string;
     jornadaId?: string;
     biometriaCadastrada?: boolean;
+    biometria?: object;
+    fotoUrl?: string | null;
   }) {
     if (!data.nome || !data.cpf || !data.matricula || !data.cargo || !data.departamento) {
       throw { statusCode: 400, message: 'Nome, CPF, matrícula, cargo e departamento são obrigatórios' };
@@ -74,6 +76,8 @@ export class FuncionariosService {
         departamento: data.departamento,
         jornadaId: data.jornadaId || null,
         biometriaCadastrada: !!data.biometriaCadastrada,
+        biometria: data.biometria || undefined,
+        fotoUrl: data.fotoUrl || null,
         status: StatusFuncionario.ATIVO,
       },
       include: {
@@ -89,6 +93,8 @@ export class FuncionariosService {
     jornadaId: string;
     status: StatusFuncionario;
     biometriaCadastrada: boolean;
+    biometria?: object;
+    fotoUrl?: string | null;
   }>) {
     await this.obterPorId(empresaId, id);
 

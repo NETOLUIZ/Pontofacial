@@ -118,6 +118,7 @@ model Funcionario {
   cargo               String
   departamento        String
   biometriaCadastrada Boolean           @default(false) @map("biometria_cadastrada")
+  biometria           Json?
   fotoUrl             String?           @map("foto_url")
   status              StatusFuncionario @default(ATIVO)
   createdAt           DateTime          @default(now()) @map("created_at")

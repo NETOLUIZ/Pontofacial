@@ -160,7 +160,7 @@ export const Funcionarios: React.FC = () => {
     setModalBiometriaAberto(true);
   };
 
-  const handleSalvarBiometria = (biometria: FaceDescriptorData) => {
+  const handleSalvarBiometria = async (biometria: FaceDescriptorData) => {
     if (funcionarioSelecionadoBiometria) {
       // Vincula ao colaborador existente
       const atualizados = funcionarios.map((f) => {
@@ -175,6 +175,15 @@ export const Funcionarios: React.FC = () => {
         return f;
       });
       salvarListaLocal(atualizados);
+      try {
+        await requestApi(`/funcionarios/${funcionarioSelecionadoBiometria.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ biometriaCadastrada: true, biometria, fotoUrl: biometria.fotoBase64 || null }),
+        });
+        await carregarFuncionarios();
+      } catch (error) {
+        console.warn('Biometria salva localmente; sincronização pendente.', error);
+      }
       setFuncionarioSelecionadoBiometria(null);
     } else {
       // Salva no formulário de criação de novo colaborador
