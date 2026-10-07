@@ -10,6 +10,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ activeView, setActiveView, currentPageTitle }) => {
   const { user, logout } = useAuth();
+  const isBiometriaSubdomain = window.location.hostname === 'biometria.ptfacial.korentech.com.br';
 
   return (
     <header className="min-h-16 shrink-0 border-b border-[#27272A] bg-[#111116] px-3 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 z-50">
@@ -42,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeView, setActiveView, curre
       {/* Switcher & Actions */}
       <div className="flex items-center gap-1 sm:gap-3 max-w-full overflow-x-auto">
         {/* Toggle Apresentação vs Painel vs Terminal */}
-        <div className="flex items-center bg-[#18181B] p-1 rounded-lg border border-[#27272A] gap-1">
+        {!isBiometriaSubdomain && <div className="flex items-center bg-[#18181B] p-1 rounded-lg border border-[#27272A] gap-1">
           <button
             onClick={() => setActiveView('terminal')}
             className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-2 transition-all ${
@@ -76,7 +77,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeView, setActiveView, curre
             <PresentationIcon size={14} />
             <span className="hidden sm:inline">Apresentação</span>
           </button>
-        </div>
+        </div>}
 
         {/* User profile & logout */}
         {user ? (
@@ -93,14 +94,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activeView, setActiveView, curre
               <LogOut size={16} />
             </button>
           </div>
-        ) : (
+        ) : !isBiometriaSubdomain ? (
           <button
             onClick={() => setActiveView('app')}
             className="text-xs font-semibold bg-[#1746B8] hover:bg-[#0D2F87] text-white px-3.5 py-1.5 rounded-md transition"
           >
             Acessar Sistema
           </button>
-        )}
+        ) : null}
       </div>
     </header>
   );

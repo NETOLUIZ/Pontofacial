@@ -26,6 +26,7 @@ import {
 
 export const Terminal: React.FC = () => {
   const { user } = useAuth();
+  const isBiometriaSubdomain = window.location.hostname === 'biometria.ptfacial.korentech.com.br';
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -545,7 +546,7 @@ export const Terminal: React.FC = () => {
           )}
 
           {/* Seletor de Colaboradores */}
-          <div className="card-corporate p-5 bg-[#141419] border-[#27272A] space-y-3">
+          <div className={`card-corporate p-5 bg-[#141419] border-[#27272A] space-y-3 ${isBiometriaSubdomain ? 'hidden' : ''}`}>
             <div className="flex items-center justify-between border-b border-[#27272A] pb-2.5">
               <div>
                 <span className="text-xs font-bold text-white">Equipe Cadastrada no Terminal</span>
