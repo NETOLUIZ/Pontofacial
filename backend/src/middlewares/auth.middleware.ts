@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { Perfil } from '@prisma/client';
+import { ACCESS_COOKIE, readCookie } from '../modules/auth/auth.cookies';
 
 export interface TokenPayload {
   usuarioId: string;
@@ -17,15 +18,17 @@ export interface AuthenticatedRequest extends Request {
 
 export function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
+  const tokenFromCookie = readCookie(req.headers.cookie, ACCESS_COOKIE);
 
-  if (!authHeader) {
+  if (!authHeader && !tokenFromCookie) {
     res.status(401).json({ success: false, message: 'Token de autenticação não fornecido' });
     return;
   }
 
-  const [scheme, token] = authHeader.split(' ');
+  const [scheme, tokenFromHeader] = authHeader?.split(' ') || [];
+  const token = tokenFromCookie || tokenFromHeader;
 
-  if (!/^Bearer$/i.test(scheme) || !token) {
+  if ((authHeader && !/^Bearer$/i.test(scheme)) || !token) {
     res.status(401).json({ success: false, message: 'Formato de token inválido' });
     return;
   }

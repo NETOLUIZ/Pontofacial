@@ -23,6 +23,7 @@ export async function requestApi<T>(endpoint: string, options: RequestApiOptions
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
+      credentials: 'include',
       signal: controller.signal,
     });
 
