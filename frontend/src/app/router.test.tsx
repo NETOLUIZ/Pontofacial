@@ -12,7 +12,8 @@ describe('rotas do portal RH', () => {
   });
 
   it('não transforma uma seção desconhecida em acesso administrativo', () => {
-    expect(routeForTab('terminal')).toBe('/dashboard');
+    expect(routeForTab('desconhecido')).toBe('/dashboard');
+    expect(routeForTab('terminal')).toBe('/terminal');
     expect(routeForTab('empresas')).toBe('/empresas');
   });
 });

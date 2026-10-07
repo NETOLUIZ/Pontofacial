@@ -1,4 +1,5 @@
 const TAB_ROUTES: Record<string, string> = {
+  terminal: '/terminal',
   dashboard: '/dashboard',
   funcionarios: '/funcionarios',
   jornadas: '/jornadas',
@@ -11,3 +12,4 @@ const TAB_ROUTES: Record<string, string> = {
 export function routeForTab(tab: string): string {
   return TAB_ROUTES[tab] || '/dashboard';
 }
+
