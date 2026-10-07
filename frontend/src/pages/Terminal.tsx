@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Funcionario } from '../types';
+import { requestApi } from '../services/api';
 import { 
   carregarModelosFaciais, 
   extrairDescritorFacial, 
@@ -57,6 +58,7 @@ export const Terminal: React.FC = () => {
   const [tempoAtual, setTempoAtual] = useState(new Date());
   const [escanendo, setEscaneando] = useState(false);
   const [scannerAtivo, setScannerAtivo] = useState(true);
+  const [rostoDetectado, setRostoDetectado] = useState(false);
 
   // Inicializar câmera WebCam
   const iniciarCamera = async () => {
@@ -153,6 +155,19 @@ export const Terminal: React.FC = () => {
     return () => window.removeEventListener('atualizacao-funcionarios', handleAtualizacao);
   }, []);
 
+  useEffect(() => {
+    let ativo = true;
+    requestApi<Funcionario[]>('/funcionarios')
+      .then((data) => {
+        if (ativo && Array.isArray(data) && data.length > 0) {
+          setFuncionariosCadastrados(data);
+          localStorage.setItem('ponto_funcionarios', JSON.stringify(data));
+        }
+      })
+      .catch(() => undefined);
+    return () => { ativo = false; };
+  }, []);
+
   // Relógio em tempo real
   useEffect(() => {
     const timer = setInterval(() => setTempoAtual(new Date()), 1000);
@@ -211,6 +226,7 @@ export const Terminal: React.FC = () => {
         if (cancelado) return;
 
         if (deteccao && canvasRef.current) {
+          setRostoDetectado(true);
           // Compara com os funcionários cadastrados que possuem vetor biométrico
           const comparacao = compararRostoComCadastrados(deteccao.descriptor, funcionariosCadastrados);
 
@@ -225,6 +241,7 @@ export const Terminal: React.FC = () => {
             desenharDeteccaoNoCanvas(canvasRef.current, videoRef.current, deteccao.box);
           }
         } else if (canvasRef.current) {
+          setRostoDetectado(false);
           const ctx = canvasRef.current.getContext('2d');
           if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
         }
@@ -418,6 +435,27 @@ export const Terminal: React.FC = () => {
                 className={`absolute inset-0 w-full h-full pointer-events-none ${cameraAtiva ? 'block' : 'hidden'}`}
                 style={{ transform: 'scaleX(-1)' }}
               />
+
+              <div className={`absolute inset-0 pointer-events-none flex items-center justify-center ${rostoDetectado ? 'bg-emerald-500/5' : ''}`}>
+                <div className={`w-[52%] h-[82%] rounded-[50%] border-4 border-dashed shadow-[0_0_0_9999px_rgba(0,0,0,0.28)] ${
+                  rostoDetectado ? 'border-emerald-400' : 'border-[#2F5FD0]'
+                }`} />
+              </div>
+
+              {rostoDetectado && (
+                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
+                  <div className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-[#07130E] shadow-lg">
+                    Rosto detectado — confirme para validar
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRostoDetectado(false)}
+                    className="pointer-events-auto rounded-lg bg-[#1746B8] px-5 py-2 text-xs font-bold text-white shadow-lg hover:bg-[#1E56D8]"
+                  >
+                    Confirmar rosto
+                  </button>
+                </div>
+              )}
 
               {/* Simulador visual se câmera não estiver liberada */}
               {!cameraAtiva && (
