@@ -60,6 +60,7 @@ export const Terminal: React.FC = () => {
   const [scannerAtivo, setScannerAtivo] = useState(true);
   const [rostoDetectado, setRostoDetectado] = useState(false);
   const [funcionarioIdentificado, setFuncionarioIdentificado] = useState<Funcionario | null>(null);
+  const [confirmandoPonto, setConfirmandoPonto] = useState(false);
 
   // Inicializar câmera WebCam
   const iniciarCamera = async () => {
@@ -382,6 +383,20 @@ export const Terminal: React.FC = () => {
     setTimeout(() => setScannerAtivo(true), 4500);
   };
 
+  const confirmarBatidaPonto = async () => {
+    if (!funcionarioIdentificado || confirmandoPonto) return;
+
+    const identificado = funcionarioIdentificado as Funcionario & { _similaridade?: number };
+    setConfirmandoPonto(true);
+
+    try {
+      await processarBatidaPonto(identificado, identificado._similaridade);
+      setFuncionarioIdentificado(null);
+    } finally {
+      setConfirmandoPonto(false);
+    }
+  };
+
   // Simulação manual de batida
   const simularColaborador = (funcionario: Funcionario) => {
     if (escanendo) return;
@@ -417,8 +432,8 @@ export const Terminal: React.FC = () => {
             <p className="mt-1 text-sm text-slate-400">Última batida: pronta para registrar</p>
             <p className="mt-5 text-sm font-medium text-sky-600">Este funcionário é você?</p>
             <div className="mt-6 flex gap-3">
-              <button type="button" onClick={() => { setFuncionarioIdentificado(null); setRostoDetectado(false); setScannerAtivo(true); }} className="flex-1 rounded-xl border-2 border-slate-200 bg-white px-4 py-4 text-base font-bold text-slate-500 transition hover:bg-slate-50"><span className="mr-2 text-xl text-rose-500">✕</span> CANCELAR</button>
-              <button type="button" onClick={async () => { const identificado = funcionarioIdentificado as Funcionario & { _similaridade?: number }; setFuncionarioIdentificado(null); await processarBatidaPonto(identificado, identificado._similaridade); }} className="flex-1 rounded-xl bg-[#7bd329] px-4 py-4 text-base font-bold text-white shadow-lg shadow-lime-300/40 transition hover:bg-[#68bb1e]"><span className="mr-2 text-xl">✓</span> CONFIRMAR</button>
+              <button type="button" disabled={confirmandoPonto} onClick={() => { setFuncionarioIdentificado(null); setRostoDetectado(false); setScannerAtivo(true); }} className="flex-1 rounded-xl border-2 border-slate-200 bg-white px-4 py-4 text-base font-bold text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"><span className="mr-2 text-xl text-rose-500">✕</span> CANCELAR</button>
+              <button type="button" disabled={confirmandoPonto} onClick={confirmarBatidaPonto} className="flex-1 rounded-xl bg-[#7bd329] px-4 py-4 text-base font-bold text-white shadow-lg shadow-lime-300/40 transition hover:bg-[#68bb1e] disabled:cursor-wait disabled:opacity-70"><span className="mr-2 text-xl">{confirmandoPonto ? '…' : '✓'}</span> {confirmandoPonto ? 'REGISTRANDO...' : 'CONFIRMAR'}</button>
             </div>
             <p className="mt-4 text-xs text-slate-400">ou diga “Confirmar” / “Cancelar” para não tocar na tela</p>
           </div>
@@ -537,14 +552,14 @@ export const Terminal: React.FC = () => {
               {rostoDetectado && !funcionarioIdentificado && (
                 <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
                   <div className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-[#07130E] shadow-lg">
-                    Rosto detectado — confirme para validar
+                    Rosto detectado, mas ainda não identificado
                   </div>
                   <button
                     type="button"
                     onClick={() => setRostoDetectado(false)}
                     className="pointer-events-auto rounded-lg bg-[#1746B8] px-5 py-2 text-xs font-bold text-white shadow-lg hover:bg-[#1E56D8]"
                   >
-                    Confirmar rosto
+                    Tentar novamente
                   </button>
                 </div>
               )}

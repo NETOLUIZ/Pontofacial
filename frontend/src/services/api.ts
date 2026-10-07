@@ -1,7 +1,14 @@
 const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api';
+const DEFAULT_TIMEOUT_MS = 8000;
 
-export async function requestApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+type RequestApiOptions = RequestInit & {
+  timeoutMs?: number;
+};
+
+export async function requestApi<T>(endpoint: string, options: RequestApiOptions = {}): Promise<T> {
   const token = localStorage.getItem('ponto_token');
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -16,6 +23,7 @@ export async function requestApi<T>(endpoint: string, options: RequestInit = {})
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
+      signal: controller.signal,
     });
 
     if (response.status === 401) {
@@ -34,6 +42,11 @@ export async function requestApi<T>(endpoint: string, options: RequestInit = {})
     return data.data;
   } catch (err: any) {
     // Se o backend não responder (ex: fetch failed por estar rodando apenas frontend puro)
+    if (err?.name === 'AbortError') {
+      throw new Error('O servidor demorou demais para responder');
+    }
     throw err;
+  } finally {
+    window.clearTimeout(timeout);
   }
 }
