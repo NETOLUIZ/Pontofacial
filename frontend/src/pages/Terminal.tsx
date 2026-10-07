@@ -59,6 +59,7 @@ export const Terminal: React.FC = () => {
   const [escanendo, setEscaneando] = useState(false);
   const [scannerAtivo, setScannerAtivo] = useState(true);
   const [rostoDetectado, setRostoDetectado] = useState(false);
+  const [funcionarioIdentificado, setFuncionarioIdentificado] = useState<Funcionario | null>(null);
 
   // Inicializar câmera WebCam
   const iniciarCamera = async () => {
@@ -117,6 +118,7 @@ export const Terminal: React.FC = () => {
     cargo?: string;
     evento?: string;
     horario?: string;
+    data?: string;
     similaridade?: number;
     foto?: string;
     mensagem?: string;
@@ -234,8 +236,9 @@ export const Terminal: React.FC = () => {
             desenharDeteccaoNoCanvas(canvasRef.current, videoRef.current, deteccao.box, comparacao.nome);
             
             const func = funcionariosCadastrados.find((f) => f.id === comparacao.funcionarioId);
-            if (func) {
-              processarBatidaPonto(func, comparacao.similaridade);
+            if (func && !funcionarioIdentificado) {
+              setFuncionarioIdentificado({ ...func, _similaridade: comparacao.similaridade } as Funcionario & { _similaridade: number });
+              setScannerAtivo(false);
             }
           } else {
             desenharDeteccaoNoCanvas(canvasRef.current, videoRef.current, deteccao.box);
@@ -254,10 +257,27 @@ export const Terminal: React.FC = () => {
       cancelado = true;
       clearInterval(intervaloScan);
     };
-  }, [cameraAtiva, modelosCarregados, scannerAtivo, funcionariosCadastrados, historicoBatidas]);
+  }, [cameraAtiva, modelosCarregados, scannerAtivo, funcionariosCadastrados, historicoBatidas, funcionarioIdentificado]);
+
+  // Mantém a confirmação visível por alguns segundos e prepara o terminal
+  // para o próximo funcionário sem deixar dados do atendimento anterior.
+  useEffect(() => {
+    if (ultimoResultado.tipo !== 'sucesso') return;
+
+    const retorno = window.setTimeout(() => {
+      setUltimoResultado({ tipo: null });
+      setRostoDetectado(false);
+      setEscaneando(false);
+      setScannerAtivo(true);
+      const ctx = canvasRef.current?.getContext('2d');
+      if (ctx && canvasRef.current) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }, 3000);
+
+    return () => window.clearTimeout(retorno);
+  }, [ultimoResultado.tipo]);
 
   // Processar e registrar o ponto (com validação anti-duplicidade)
-  const processarBatidaPonto = (funcionario: Funcionario, similaridadeCustom?: number) => {
+  const processarBatidaPonto = async (funcionario: Funcionario, similaridadeCustom?: number) => {
     const agora = new Date();
     const horarioStr = agora.toLocaleTimeString('pt-BR');
     const agoraTimestamp = Date.now();
@@ -302,11 +322,34 @@ export const Terminal: React.FC = () => {
       horario: horarioStr,
     };
 
-    // Salva no localStorage e emite evento
+    // O registro principal é feito na API para que o RH, Dashboard e Relatórios
+    // consultem a mesma fonte. O localStorage fica apenas como contingência.
+    let registradoNaApi = false;
+    try {
+      await requestApi('/registros-ponto', {
+        method: 'POST',
+        body: JSON.stringify({
+          funcionarioId: funcionario.id,
+          tipo: novoEvento,
+          dataHora: agora.toISOString(),
+          origem: offlineMode ? 'OFFLINE' : 'ONLINE',
+          status: 'VALIDO',
+          idempotencyKey: novoRegistro.id,
+          fotoRegistroUrl: funcionario.fotoUrl || undefined,
+        }),
+      });
+      registradoNaApi = true;
+    } catch (err) {
+      console.warn('API indisponível; registro mantido em contingência local.', err);
+    }
+
+    // Espelha localmente para atualizar o terminal e permitir sincronização offline.
     try {
       const registrosAntigos = JSON.parse(localStorage.getItem('ponto_registros') || '[]');
       const atualizados = [novoRegistro, ...registrosAntigos];
-      localStorage.setItem('ponto_registros', JSON.stringify(atualizados));
+      if (!registradoNaApi || offlineMode) {
+        localStorage.setItem('ponto_registros', JSON.stringify(atualizados));
+      }
       window.dispatchEvent(new CustomEvent('novo-registro-ponto', { detail: novoRegistro }));
     } catch (err) {
       console.warn('Erro ao salvar registro de ponto:', err);
@@ -326,9 +369,10 @@ export const Terminal: React.FC = () => {
       cargo: funcionario.cargo,
       evento: novoEvento === 'ENTRADA' ? 'Entrada Confirmada' : 'Saída Confirmada',
       horario: horarioStr,
+      data: agora.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
       similaridade: sim,
       foto: funcionario.fotoUrl || undefined,
-      mensagem: offlineMode 
+      mensagem: !registradoNaApi
         ? 'Gravado no armazenamento local criptografado (SQLite). Sincronizará com a VPS assim que a rede voltar.'
         : 'Ponto auditado com selo criptográfico SHA-256 e transmitido ao servidor corporativo.',
     });
@@ -343,7 +387,9 @@ export const Terminal: React.FC = () => {
     if (escanendo) return;
     setEscaneando(true);
     setTimeout(() => {
-      processarBatidaPonto(funcionario);
+      setFuncionarioIdentificado(funcionario);
+      setRostoDetectado(true);
+      setScannerAtivo(false);
       setEscaneando(false);
     }, 800);
   };
@@ -358,7 +404,53 @@ export const Terminal: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="terminal-kiosk">
+      {funcionarioIdentificado && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/35 p-4 backdrop-blur-[2px] md:items-center">
+          <div className="w-full max-w-lg rounded-[2rem] bg-white p-5 text-center text-slate-700 shadow-2xl md:p-7">
+            <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-4 border-sky-100 bg-slate-100">
+              {funcionarioIdentificado.fotoUrl ? <img src={funcionarioIdentificado.fotoUrl} alt={funcionarioIdentificado.nome} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-2xl font-extrabold text-sky-600">{funcionarioIdentificado.nome.slice(0, 2).toUpperCase()}</div>}
+            </div>
+            <div className="mx-auto mb-5 inline-block rounded-xl bg-sky-50 px-5 py-2 text-lg font-bold text-sky-700">{tempoAtual.toLocaleDateString('pt-BR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</div>
+            <h2 className="text-2xl font-bold md:text-3xl">{funcionarioIdentificado.nome}</h2>
+            <p className="mt-1 text-sm text-slate-500">CPF: não informado</p>
+            <p className="mt-1 text-sm text-slate-400">Última batida: pronta para registrar</p>
+            <p className="mt-5 text-sm font-medium text-sky-600">Este funcionário é você?</p>
+            <div className="mt-6 flex gap-3">
+              <button type="button" onClick={() => { setFuncionarioIdentificado(null); setRostoDetectado(false); setScannerAtivo(true); }} className="flex-1 rounded-xl border-2 border-slate-200 bg-white px-4 py-4 text-base font-bold text-slate-500 transition hover:bg-slate-50"><span className="mr-2 text-xl text-rose-500">✕</span> CANCELAR</button>
+              <button type="button" onClick={async () => { const identificado = funcionarioIdentificado as Funcionario & { _similaridade?: number }; setFuncionarioIdentificado(null); await processarBatidaPonto(identificado, identificado._similaridade); }} className="flex-1 rounded-xl bg-[#7bd329] px-4 py-4 text-base font-bold text-white shadow-lg shadow-lime-300/40 transition hover:bg-[#68bb1e]"><span className="mr-2 text-xl">✓</span> CONFIRMAR</button>
+            </div>
+            <p className="mt-4 text-xs text-slate-400">ou diga “Confirmar” / “Cancelar” para não tocar na tela</p>
+          </div>
+        </div>
+      )}
+      {ultimoResultado.tipo === 'sucesso' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#dff5ff] via-[#c7edff] to-[#b7e4fa] px-6 text-[#12304a] animate-in fade-in duration-300">
+          <div className="w-full max-w-md text-center">
+            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#2b83bd] text-white shadow-[0_12px_35px_rgba(43,131,189,0.28)] success-pop">
+              <CheckCircle2 size={54} strokeWidth={2.5} />
+            </div>
+            <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#2b83bd]">Ponto registrado com sucesso</p>
+            <div className="mx-auto mt-8 flex items-center gap-4 rounded-3xl border border-white/70 bg-white/65 p-4 text-left shadow-xl shadow-[#5aa8cf]/15 backdrop-blur-sm">
+              {ultimoResultado.foto ? (
+                <img src={ultimoResultado.foto} alt={ultimoResultado.nome} className="h-16 w-16 rounded-2xl object-cover ring-2 ring-[#8bc9e8]" />
+              ) : (
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#d9f2ff] text-2xl font-extrabold text-[#2b83bd]">{ultimoResultado.nome?.charAt(0)}</div>
+              )}
+              <div>
+                <h2 className="text-xl font-extrabold">{ultimoResultado.nome}</h2>
+                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-[#2b83bd]">{ultimoResultado.evento === 'Entrada Confirmada' ? 'Entrada registrada' : 'Saída registrada'}</p>
+              </div>
+            </div>
+            <div className="mt-5 space-y-1 text-sm text-[#31536c]">
+              <p>{ultimoResultado.data}</p>
+              <p className="font-mono text-2xl font-extrabold text-[#12304a]">{ultimoResultado.horario}</p>
+            </div>
+            <p className="mt-7 text-sm text-[#31536c]">Seu ponto foi registrado com sucesso.</p>
+            <div className="mx-auto mt-8 h-1.5 w-40 overflow-hidden rounded-full bg-white/70"><div className="h-full w-full origin-left rounded-full bg-[#2b83bd] success-progress" /></div>
+          </div>
+        </div>
+      )}
       {/* Top Header do Terminal */}
       <div className="card-corporate p-5 bg-[#111116] border-[#27272A] flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -442,7 +534,7 @@ export const Terminal: React.FC = () => {
                 }`} />
               </div>
 
-              {rostoDetectado && (
+              {rostoDetectado && !funcionarioIdentificado && (
                 <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
                   <div className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-[#07130E] shadow-lg">
                     Rosto detectado — confirme para validar
@@ -526,7 +618,7 @@ export const Terminal: React.FC = () => {
         <div className="lg:col-span-5 space-y-4">
           {/* Card de Sucesso da Batida */}
           {ultimoResultado.tipo === 'sucesso' && (
-            <div className="card-corporate p-5 bg-[#141419] border-emerald-500/50 shadow-xl space-y-3">
+            <div className="hidden card-corporate p-5 bg-[#141419] border-emerald-500/50 shadow-xl space-y-3">
               <div className="flex items-center gap-3">
                 {ultimoResultado.foto ? (
                   <img

@@ -22,11 +22,11 @@ const AppContent: React.FC = () => {
   return (
     <div className="h-screen bg-[#09090B] flex flex-col text-white overflow-hidden">
       {/* Top Navbar Header */}
-      <Navbar
+      {activeView !== 'terminal' && <Navbar
         activeView={activeView}
         setActiveView={setActiveView}
         currentPageTitle={currentTab}
-      />
+      />}
 
       {/* Main Container */}
       {activeView === 'presentation' ? (
@@ -34,8 +34,8 @@ const AppContent: React.FC = () => {
           <Presentation onGoToApp={() => setActiveView('app')} />
         </div>
       ) : activeView === 'terminal' ? (
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#09090B]">
-          <div className="max-w-7xl mx-auto w-full">
+        <div className="flex-1 overflow-y-auto bg-[#09090B]">
+          <div className="w-full h-full">
             <Terminal />
           </div>
         </div>

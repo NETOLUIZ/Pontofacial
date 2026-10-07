@@ -272,3 +272,57 @@ code, pre {
 .scanner-laser {
   animation: scanline 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
+@keyframes success-pop {
+  0% { transform: scale(.72); opacity: 0; }
+  70% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes success-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.success-pop { animation: success-pop .45s cubic-bezier(.2,.8,.2,1) both; }
+.success-progress { animation: success-progress 3s linear both; }
+
+/* Modo totem inspirado nas telas de referência: câmera em primeiro plano,
+   interface clara e controles grandes para uso em tablet. */
+.terminal-kiosk {
+  min-height: 100vh;
+  background: #f7f9fc;
+  color: #526174;
+  padding: 0 !important;
+}
+.terminal-kiosk > div:first-child {
+  background: #fff !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e7edf3 !important;
+  border-radius: 0 !important;
+  box-shadow: 0 1px 8px rgba(50,80,110,.08);
+  padding: 14px 22px !important;
+}
+.terminal-kiosk > div:first-child h2,
+.terminal-kiosk > div:first-child .text-white { color: #31445a !important; }
+.terminal-kiosk > div:first-child .text-[#6B7280] { color: #8997a8 !important; }
+.terminal-kiosk > div:nth-child(2) { display: block !important; padding: 18px 22px 28px; }
+.terminal-kiosk > div:nth-child(2) > div:first-child { max-width: 760px; margin: 0 auto; }
+.terminal-kiosk > div:nth-child(2) > div:first-child > div {
+  border: 0 !important; border-radius: 24px !important; background: #fff !important;
+  box-shadow: 0 8px 30px rgba(50,80,110,.12) !important; padding: 10px !important;
+}
+.terminal-kiosk .tablet-camera-notch { display: none; }
+.terminal-kiosk .aspect-\[4\/3\] { aspect-ratio: 3 / 4 !important; max-height: calc(100vh - 205px); background: #eef2f5 !important; border-radius: 18px; }
+.terminal-kiosk .aspect-\[4\/3\] + div { background: #fff !important; border-color: #edf1f5 !important; color: #728197 !important; }
+.terminal-kiosk .aspect-\[4\/3\] + div .text-\[\#A1A1AA\] { color: #728197 !important; }
+.terminal-kiosk .lg\:col-span-5 { max-width: 760px; margin: 14px auto 0; }
+.terminal-kiosk .lg\:col-span-5 > div:first-child:not(.hidden) { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+.terminal-kiosk .lg\:col-span-5 > div:last-child { display: none; }
+.terminal-kiosk .badge-green { background: #e8f7ee !important; color: #229653 !important; }
+.terminal-kiosk .bg-emerald-500 { background: #79d936 !important; }
+.terminal-kiosk .border-emerald-400 { border-color: #79d936 !important; }
+.terminal-kiosk .text-emerald-400 { color: #229653 !important; }
+.terminal-kiosk .scanner-laser { background: linear-gradient(90deg, transparent, #39c7ed, transparent) !important; }
+@media (orientation: landscape) and (max-width: 900px) {
+  .terminal-kiosk .aspect-\[4\/3\] { max-height: calc(100vh - 160px); aspect-ratio: 16 / 9 !important; }
+}
